@@ -241,7 +241,7 @@
                 
               
 
-              <time title="Created: 2019-11-09 14:26:48 / Modified: 16:45:50" itemprop="dateCreated datePublished" datetime="2019-11-09T14:26:48+08:00">2019-11-09</time>
+              <time title="Created: 2019-11-09 14:26:48 / Modified: 17:24:28" itemprop="dateCreated datePublished" datetime="2019-11-09T14:26:48+08:00">2019-11-09</time>
             </span>
           
             
@@ -260,24 +260,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="建造驱动的过程"><a href="#建造驱动的过程" class="headerlink" title="建造驱动的过程"></a>建造驱动的过程</h1><p>&emsp;&emsp;现在正式开始。</p>
-<h2 id="一个简单的-Linux-内核"><a href="#一个简单的-Linux-内核" class="headerlink" title="一个简单的 Linux 内核"></a>一个简单的 Linux 内核</h2><p>&emsp;&emsp;这里使用 Ubuntu19.10 系统。</p>
-<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><p>&emsp;&emsp;<strong>这些事项非常重要</strong>：</p>
-<ol>
-<li>使用的内核源码版本需要与系统一致，否则编译好的驱动装载不了。Ubuntu 系统的内核源码一般在 <code>/usr/src</code> 里。</li>
-<li>编译还需要一些额外的依赖包，比如 <code>flex</code>，<code>bison</code>，<code>libelf-dev</code>，只要它提醒你缺了什么安装就是了。</li>
-</ol>
-<h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><p>话不多说，上代码</p>
-<p>首先新建一个目录，比如 hello，在该目录下新建如下两个文件</p>
-<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">/* 文件名Makefile */</span><br><span class="line">obj-m := hello.o</span><br><span class="line"></span><br><span class="line">KERNEL_DIR := 你的内核所在位置</span><br><span class="line"><span class="section">all:</span></span><br><span class="line">	make -C <span class="variable">$(KERNEL_DIR)</span> M=./ modules</span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm *.o *.ko *.mod.c</span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:clean</span></span><br></pre></td></tr></table></figure>
-
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 文件名 hello.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="comment">// 共享协议，不写会 warning 你</span></span><br><span class="line">MODULE_LICENSE(<span class="string">"Dual BSD/GPL"</span>);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">hello_init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 注意 KERN_ALERT 后面没有逗号。</span></span><br><span class="line">    printk(KERN_ALERT <span class="string">"Hello, world\n"</span>); </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">hello_exit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 注意 KERN_ALERT 后面没有逗号。</span></span><br><span class="line">    printk(KERN_ALERT <span class="string">"Goodbye, cruel world\n"</span>); </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 驱动加载时调用 hello_init 函数。</span></span><br><span class="line">module_init(hello_init); </span><br><span class="line"><span class="comment">// 驱动卸载时调用 hello_exit 函数</span></span><br><span class="line">module_exit(hello_exit);</span><br></pre></td></tr></table></figure>
-
-<h3 id="编译与装载"><a href="#编译与装载" class="headerlink" title="编译与装载"></a>编译与装载</h3><p>现在你可以在这两个文件目录下，使用命令 <code>make</code> 来创建驱动了。如果你嫌慢，可以按你的 cpu 核心数开多线程。比如我的 cpu 是 8 线程，我就使用命令 <code>make -j8</code> 而不是 <code>make</code>。</p>
-<p>编译完后，在当前目录可以看到一个 hello.ko 类型的文件。</p>
-<p>使用命令 <code>sudo insmod hello.ko</code> 装载，然后你就可以在 <em>/var/log/messages</em> 文件 (<strong><em>注意：ubuntu 没有这个文件，可使用 <code>dmesg | tail -5</code> 命令查看</em></strong>) 看到 “hello world” 了。</p>
-<p>命令 <code>sudo rmmod hello</code> 卸载驱动。</p>
-
+          一个简单的 Linux 设备驱动例子及其建造过程详解
+          <!--noindex-->
+          
+            <div class="post-button">
+              <a class="btn" href="/2019/11/linux-driver-2-one-simple-module/">
+                Read more &raquo;
+              </a>
+            </div>
+          
+          <!--/noindex-->
         
       
     </div>
@@ -328,7 +320,7 @@
                 
               
 
-              <time title="Created: 2019-11-09 13:33:42 / Modified: 14:36:25" itemprop="dateCreated datePublished" datetime="2019-11-09T13:33:42+08:00">2019-11-09</time>
+              <time title="Created: 2019-11-09 13:33:42 / Modified: 17:23:44" itemprop="dateCreated datePublished" datetime="2019-11-09T13:33:42+08:00">2019-11-09</time>
             </span>
           
             
@@ -347,224 +339,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="Linux设备驱动第一章：简介与规范"><a href="#Linux设备驱动第一章：简介与规范" class="headerlink" title="Linux设备驱动第一章：简介与规范"></a>Linux设备驱动第一章：简介与规范</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>&emsp;&emsp;学习linux设备驱动时，使用的教材是 <em>O’RELLY</em> 的 <strong>Linux设备驱动第三版</strong>，其机翻风格及废话连篇令我头疼不已，且内容过时。本博客系列即由此开始。</p>
-<p>你需要具备以下知识：</p>
-<ol>
-<li>C语言。会用就行。</li>
-<li>简单的 Linux 操作系统知识。都开始学设备驱动了应该都会吧。</li>
-<li>没了。</li>
-</ol>
-<h2 id="驱动简介"><a href="#驱动简介" class="headerlink" title="驱动简介"></a>驱动简介</h2><h3 id="驱动分类"><a href="#驱动分类" class="headerlink" title="驱动分类"></a>驱动分类</h3><p>&emsp;&emsp;驱动即提供予操作系统操纵设备的具体方式。设备分以下种类：</p>
-<ul>
-<li>字符设备，即通过字节流与操作系统交互信息</li>
-<li>块设备，即通过一定大小的字节数据(称为块数据)与操作系统交互信息。<strong>注意</strong>：Linux系统不像其他系统一样限定块的大小，它可以像操作字符设备一样操作块设备。两种设备仅内核在内部管理数据的方式上有区别。</li>
-<li>网络接口，处理网络事务，其具体以后章节会说。</li>
-</ul>
-<h3 id="一个合格的驱动的要素"><a href="#一个合格的驱动的要素" class="headerlink" title="一个合格的驱动的要素"></a>一个合格的驱动的要素</h3><p>一个驱动应当足够健壮：</p>
-<ol>
-<li>没有bug：这没什么好说的。</li>
-<li>权限限制：权限其实应当由内核管理，但不同驱动要不同对待。一个驱动应当区分不同权限可做的操作，否则硬件可能损坏甚至整个系统被黑。</li>
-<li>小心操作：驱动可操作的权限极大，操作系统资源时小心不要引起系统资源被损坏。</li>
-<li>线程安全：应该考虑有多个用户调用此驱动的情况。</li>
-</ol>
-
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-          <div class="post-eof"></div>
-        
-      </footer>
-  </article>
-  
-  
-  
-
-    
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://blog.hypoacer.cn/2019/10/firstmd/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Hypoacer Jiang">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hypoacer">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-            
-            <a href="/2019/10/firstmd/" class="post-title-link" itemprop="url">firstmd</a>
+          Linux 设备驱动的简介与规范。
+          <!--noindex-->
           
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              
-                
-              
-
-              <time title="Created: 2019-10-05 14:13:25 / Modified: 14:54:28" itemprop="dateCreated datePublished" datetime="2019-10-05T14:13:25+08:00">2019-10-05</time>
-            </span>
+            <div class="post-button">
+              <a class="btn" href="/2019/11/linux-driver-1-what-is-linux-driver/">
+                Read more &raquo;
+              </a>
+            </div>
           
-            
-
-            
-          
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="hello-world"><a href="#hello-world" class="headerlink" title="hello world"></a>hello world</h1><h2 id="name"><a href="#name" class="headerlink" title="name"></a>name</h2><p>$f_n=f_{n-1}+f_{n-2}$</p>
-<p><a href="www.baidu.com" title="baidu">baidu</a><br><a href="www.google.com">google</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">star=&gt;start: my start</span><br><span class="line">oper=&gt;operation: my operation</span><br><span class="line">con=&gt;condition: yes or no?</span><br><span class="line">en=&gt;end: my end</span><br><span class="line">star-&gt;oper-&gt;con</span><br><span class="line">con(yes)-&gt;en</span><br><span class="line">con(no)-&gt;oper</span><br></pre></td></tr></table></figure>
-
-<p>hello</p>
-<blockquote>
-<p>what is your name<br>my name is daise</p>
-</blockquote>
-<p>hello world</p>
-<p><del>what a shit</del></p>
-<p><em>hi</em></p>
-<p><strong>hello</strong></p>
-<blockquote><p>ladys and gentalmen</p>
-<footer><strong>gentoo wu</strong><cite><a href="http://www.baidu.com" target="_blank" rel="noopener">hello world</a></cite></footer></blockquote>
-
-<figure class="highlight cpp"><figcaption><span>test.cpp</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> a)</span> </span>&#123;</span><br><span class="line">    a += <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<table>
-<thead>
-<tr>
-<th>test</th>
-<th>test</th>
-<th>test</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>hello</td>
-<td>world</td>
-<td>markdown</td>
-</tr>
-</tbody></table>
-<ul>
-<li>name</li>
-<li>daise<ul>
-<li>what</li>
-<li>hhh</li>
-</ul>
-<ol>
-<li>name</li>
-<li>helo</li>
-<li>hello</li>
-</ol>
-</li>
-</ul>
-
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-          <div class="post-eof"></div>
-        
-      </footer>
-  </article>
-  
-  
-  
-
-    
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://blog.hypoacer.cn/2019/10/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Hypoacer Jiang">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hypoacer">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-            
-            <a href="/2019/10/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
-          
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              
-                
-              
-
-              <time title="Created: 2019-10-05 12:35:40 / Modified: 14:16:20" itemprop="dateCreated datePublished" datetime="2019-10-05T12:35:40+08:00">2019-10-05</time>
-            </span>
-          
-            
-
-            
-          
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
+          <!--/noindex-->
         
       
     </div>
@@ -628,7 +412,7 @@
         
           <a href="/archives/">
         
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -731,14 +515,6 @@
       
     
       
-    
-      
-        
-      
-    
-      
-    
-  
     
   
 
