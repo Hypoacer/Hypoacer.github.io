@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Hypoacer" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="一个简单的 Linux 设备驱动例子及其建造过程详解">
+<meta name="keywords" content="Linux,Linux 驱动,教程&#x2F;笔记">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 设备驱动-2-驱动详解">
+<meta property="og:url" content="http://blog.hypoacer.cn/2019/11/linux-driver/linux-driver-2-one-simple-module/index.html">
+<meta property="og:site_name" content="Hypoacer">
+<meta property="og:description" content="一个简单的 Linux 设备驱动例子及其建造过程详解">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2019-11-14T12:39:13.964Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux 设备驱动-2-驱动详解">
+<meta name="twitter:description" content="一个简单的 Linux 设备驱动例子及其建造过程详解">
+
+<link rel="canonical" href="http://blog.hypoacer.cn/2019/11/linux-driver/linux-driver-2-one-simple-module/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Linux 设备驱动-2-驱动详解 | Hypoacer</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Hypoacer</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="en">
+    <link itemprop="mainEntityOfPage" href="http://blog.hypoacer.cn/2019/11/linux-driver/linux-driver-2-one-simple-module/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hypoacer Jiang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hypoacer">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 设备驱动-2-驱动详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-11-09 14:26:48" itemprop="dateCreated datePublished" datetime="2019-11-09T14:26:48+08:00">2019-11-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-14 20:39:13" itemprop="dateModified" datetime="2019-11-14T20:39:13+08:00">2019-11-14</time>
+              </span>
+
+          
+            <div class="post-description">一个简单的 Linux 设备驱动例子及其建造过程详解</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="驱动详解"><a href="#驱动详解" class="headerlink" title="驱动详解"></a>驱动详解</h1><p>&emsp;&emsp;现在正式开始。</p>
+<h2 id="一个简单的-Linux-驱动"><a href="#一个简单的-Linux-驱动" class="headerlink" title="一个简单的 Linux 驱动"></a>一个简单的 Linux 驱动</h2><p>&emsp;&emsp;这里使用 Ubuntu19.10 系统。</p>
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><p>&emsp;&emsp;<strong>这些事项非常重要</strong>：</p>
+<ol>
+<li>使用的内核源码版本需要与系统一致，否则编译好的驱动装载不了。Ubuntu 系统的内核源码一般在 <code>/usr/src</code> 里。</li>
+<li>编译还需要一些额外的依赖包，比如 <code>flex</code>，<code>bison</code>，<code>libelf-dev</code>，只要它提醒你缺了什么安装就是了。</li>
+</ol>
+<h3 id="简单驱动源码"><a href="#简单驱动源码" class="headerlink" title="简单驱动源码"></a>简单驱动源码</h3><p>&emsp;&emsp;话不多说，上代码</p>
+<p>&emsp;&emsp;首先新建一个目录，比如 hello，在该目录下新建如下两个文件</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">/* 文件名Makefile */</span><br><span class="line"></span><br><span class="line">// hello 是驱动的名字，生成 o 文件。</span><br><span class="line">obj-m := hello.o</span><br><span class="line"></span><br><span class="line">// 你内核所在位置，一般写下面的即可</span><br><span class="line">KERNEL_DIR := /lib/modules/<span class="variable">$(<span class="built_in">shell</span> uname -r)</span>/build</span><br><span class="line">PWD := <span class="variable">$(<span class="built_in">shell</span> pwd)</span></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">	make -C <span class="variable">$(KERNEL_DIR)</span> M=<span class="variable">$(PWD)</span> modules</span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm *.o *.ko *.mod.c</span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:clean</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 文件名 hello.c */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line">MODULE_LICENSE(<span class="string">"Dual BSD/GPL"</span>);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">hello_init</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 注意 KERN_ALERT 后面没有逗号。</span></span><br><span class="line">    printk(KERN_ALERT <span class="string">"Hello, world\n"</span>); </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">hello_exit</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 注意 KERN_ALERT 后面没有逗号。</span></span><br><span class="line">    printk(KERN_ALERT <span class="string">"Goodbye, cruel world\n"</span>); </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(hello_init);</span><br><span class="line">module_exit(hello_exit);</span><br></pre></td></tr></table></figure>
+
+<h3 id="编译、装载与卸载"><a href="#编译、装载与卸载" class="headerlink" title="编译、装载与卸载"></a>编译、装载与卸载</h3><ol>
+<li><p>编译</p>
+<p> &emsp;&emsp;这两个文件的目录下，使用命令 <code>make</code> 来编译驱动。如果你嫌慢，可以按你的 cpu 核心数开多线程。比如我的 cpu 是 8 线程，我就使用命令 <code>make -j8</code> 而不是 <code>make</code>。</p>
+<p> &emsp;&emsp;编译完后，在当前目录可以看到一个 hello.ko 类型的文件。</p>
+</li>
+<li><p>装载</p>
+<p> &emsp;&emsp;使用命令 <code>sudo insmod hello.ko</code> 装载(注意后缀是 ko !!!)，然后你就可以在 <em>/var/log/messages</em> 文件 (<strong>注意：ubuntu 没有这个文件，可使用 <code>dmesg | tail -5</code> 命令查看</strong>) 看到 “hello world” 了。</p>
+<p> &emsp;&emsp;如果你看到 <em>module verification failed</em> 提示，不必理会。强迫症可以在 Makefile 文件里添加 <code>CONFIG_MODULE_SIG=n</code>。</p>
+</li>
+<li><p>查看</p>
+<p> &emsp;&emsp;装载后使用命令 <code>lsmod</code>，可以看到 <em>hello</em> 正在其中。</p>
+</li>
+<li><p>卸载</p>
+<p> &emsp;&emsp;命令 <code>sudo rmmod hello</code> 卸载驱动。</p>
+</li>
+</ol>
+<h3 id="源码详解"><a href="#源码详解" class="headerlink" title="源码详解"></a>源码详解</h3><p>&emsp;&emsp;这里解释 <em>hello.c</em> 源码文件里各条代码的意思。</p>
+<ol>
+<li><p><code>#include &lt;linux/init.h&gt;</code><br><code>#include &lt;linux/module.h&gt;</code></p>
+<p> &emsp;&emsp;导入两个最基本的头文件。<strong>module</strong> 头文件包含模块加载时需要的函数和定义，<strong>init</strong> 头文件包含模块初始化(<code>module_init</code>)和清理(<code>module_exit</code>)函数。开发驱动也会用到其他头文件。</p>
+</li>
+<li><p><code>MODULE_LICENSE(&quot;Dual BSD/GPL&quot;)</code></p>
+<p> &emsp;&emsp;指定源码共享协议，<strong>非必须，但最好</strong>加上。常用的共享协议有 <em>GPL<em>，</em>Dual BSD/GPL<em>，</em>Dual MPL/GPL</em> 和 <em>Proprietary</em>。如果不标，默认是 <em>Proprietary</em>，即私有。一般不会有人帮助开发私有模块。</p>
+<p> &emsp;&emsp;你也可以：</p>
+<ul>
+<li><code>MODULE_AUTHOR(&quot;声明作者名字&quot;)</code></li>
+<li><code>MODULE_DESCRIPION(&quot;描述驱动模块&quot;)</code></li>
+<li><code>MODULE_VERSION(&quot;声明驱动版本&quot;)</code></li>
+<li><code>MODULE_ALIAS</code>，<code>MODULE_DEVICE_TABLE</code>，很多章后会谈到。</li>
+</ul>
+</li>
+<li><p><strong><code>static</code></strong><code>int xxxx(</code><strong><code>void</code></strong><code>)</code></p>
+<p> &emsp;&emsp;函数随便你起名字，但最好起得符合规范一点。如果函数没有参数，记得加 <code>void</code>，否则会报 error。初始化和清除函数加上 <code>static</code>(<strong>非必须，但最好</strong>)。</p>
+<p> &emsp;&emsp;<strong>清理函数没有返回值</strong>。</p>
+</li>
+<li><p><code>printk(KERN_ALERT &quot;Hello, world\n&quot;)</code></p>
+<p> &emsp;&emsp;这个函数涉及到内核空间知识，后文会说。<code>KERN_ALERT</code> 是通知级别，注意 <code>KERN_ALERT</code> 和 <code>&quot;hello world\n&quot;</code> 之间没有逗号。</p>
+</li>
+<li><p><code>module_init(&quot;hello_init&quot;)</code><br><code>module_exit(hello_exit)</code></p>
+<p> &emsp;&emsp;分别<strong>指定</strong>初始化和清除函数为 <code>hello_init</code> 和 <code>hello_exit</code>。内核会分别在装载和卸载模块的时候运行此处设置的两个函数。</p>
+</li>
+</ol>
+<h2 id="更详细的内容"><a href="#更详细的内容" class="headerlink" title="更详细的内容"></a>更详细的内容</h2><p>&emsp;&emsp;上面的例子没有表达出来的内容，会在这里强调。</p>
+<h3 id="杂项"><a href="#杂项" class="headerlink" title="杂项"></a>杂项</h3><h3 id="初始化和清除"><a href="#初始化和清除" class="headerlink" title="初始化和清除"></a>初始化和清除</h3><ol>
+<li><p>初始化函数的定义</p>
+<p> &emsp;&emsp;其实应当写作 <code>static __init int hello_init(void)</code> 的形式，即多了一个 <code>__init</code> 标签。多一个 <code>__init</code> 标签表示这个函数只是在初始化使用，这样操作系统就可以更快的释放空间。</p>
+<p> &emsp;&emsp;类似的标签还有：</p>
+<ul>
+<li><p>__initdata，用于变量，表示此数据只在初始化的时候会用到。</p>
+</li>
+<li><p>__exit，<strong>用于清除函数</strong>，表示次函数在清除时会用到。</p>
+<p>&emsp;&emsp;此外，<code>__devinit</code>，<code>__devinitdata</code> 和 <em>hotplug</em> 有关，讲 <em>hotplug</em> 会讲到。</p>
+</li>
+</ul>
+</li>
+<li><p>初始化错误处理</p>
+<p> 不是所有初始化都会成功。如果不成功，应当</p>
+</li>
+</ol>
+<h3 id="内核空间与用户空间"><a href="#内核空间与用户空间" class="headerlink" title="内核空间与用户空间"></a>内核空间与用户空间</h3><p>&emsp;&emsp;驱动模块是内核的扩展功能，在内核空间运行，而应用程序在用户空间运行。</p>
+<p>&emsp;&emsp;内核空间即内核活动的空间(你可以把内核当成一个应用程序)，内核空间里的权限极大，可以访问任何资源。</p>
+<p>&emsp;&emsp;用户空间即应用程序的活动空间，其执行必须依托于内核提供的资源，如 CPU 资源、存储资源、I/O 资源等。内核则提供给用户空间应用程序调用这些资源的接口，即系统调用。驱动程序相当于额外添加系统调用。</p>
+<p>&emsp;&emsp;之所以有这些分类当然是为了安全，即应用程序不应该访问不属于它的资源，不能做它不该做的事。你可以在操作系统相关的书籍看这些内容。</p>
+<p>&emsp;&emsp;一般来说，CPU 会负责给权限分级别，比如 x86 架构的就有好几个级别，Linux 会把内核空间分到权限最高的级别(超级模式)，把用户空间分到权限最低的级别(用户模式)。</p>
+<p>&emsp;&emsp;<strong>内核空间分配的内存十分小，所以最好只在调用驱动的时候才声明大空间。</strong></p>
+<h3 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h3><p>&emsp;&emsp;可以说驱动程序必须考虑并发问题，因为驱动即有可能遇到以下情况之一：</p>
+<ol>
+<li>同时有几个应用程序调用你的驱动。</li>
+<li>系统运行与多处理器系统(一般在服务器端)。</li>
+<li>应用程序抢占。</li>
+</ol>
+<p>&emsp;&emsp;后文的驱动都会考虑并发并解读，并且在第五章会专门提到。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Linux-驱动/" rel="tag"># Linux 驱动</a>
+              <a href="/tags/教程-笔记/" rel="tag"># 教程/笔记</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/11/linux-driver/linux-driver-1-what-is-linux-driver/" rel="next" title="Linux 设备驱动-1-简介与规范">
+                  <i class="fa fa-chevron-left"></i> Linux 设备驱动-1-简介与规范
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2019/11/linux-driver/linux-driver-3-character-device/" rel="prev" title="Linux 设备驱动-3-字符驱动">
+                  Linux 设备驱动-3-字符驱动 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#驱动详解"><span class="nav-number">1.</span> <span class="nav-text">驱动详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#一个简单的-Linux-驱动"><span class="nav-number">1.1.</span> <span class="nav-text">一个简单的 Linux 驱动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注意事项"><span class="nav-number">1.1.1.</span> <span class="nav-text">注意事项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#简单驱动源码"><span class="nav-number">1.1.2.</span> <span class="nav-text">简单驱动源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译、装载与卸载"><span class="nav-number">1.1.3.</span> <span class="nav-text">编译、装载与卸载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#源码详解"><span class="nav-number">1.1.4.</span> <span class="nav-text">源码详解</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更详细的内容"><span class="nav-number">1.2.</span> <span class="nav-text">更详细的内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#杂项"><span class="nav-number">1.2.1.</span> <span class="nav-text">杂项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#初始化和清除"><span class="nav-number">1.2.2.</span> <span class="nav-text">初始化和清除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内核空间与用户空间"><span class="nav-number">1.2.3.</span> <span class="nav-text">内核空间与用户空间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#并发"><span class="nav-number">1.2.4.</span> <span class="nav-text">并发</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hypoacer Jiang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hypoacer Jiang</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://muse.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
